@@ -24,5 +24,65 @@ public class SQLHelper {
 		
 		return buffer.toString();
 	}
-	
+
+	public static String normalizeSearchKey(String searchKey) {
+		if(searchKey == null || searchKey.trim().length() == 0) {
+			return null;
+		}
+
+		return "%" + searchKey.trim().toLowerCase() + "%";
+	}
+
+	public static String buildInsertSql(String table, String[] attributes) {
+		return String.format(
+				"insert into %s (%s) values (%s)",
+				table,
+				join(attributes, ", "),
+				join(prepend(attributes, ":"), ", ")
+		);
+	}
+
+	public static String buildUpdateSql(String table, String[] attributes, String criteria) {
+		String[] settings = new String[attributes.length];
+		String[] prependedAttributes = prepend(attributes, ":");
+		for(int i=0; i<attributes.length; i++) {
+			settings[i] = attributes[i] + " = " + prependedAttributes[i];
+		}
+
+		return String.format(
+				"update %s set %s where %s",
+				table,
+				join(settings, ", "),
+				criteria
+		);
+	}
+
+	/**
+	 * join pieces into one piece and delimited by given delimiter
+	 * @param pieces
+	 * @param delimiter
+	 * @return
+	 */
+	public static String join(String[] pieces, String delimiter) {
+		if(pieces == null) return null;
+		if(pieces.length == 0) return null;
+
+		StringBuffer sb = new StringBuffer();
+		sb.append(pieces[0]);
+		for(int i=1; i<pieces.length; i++) {
+			sb.append(delimiter + pieces[i]);
+		}
+
+		return sb.toString();
+	}
+
+	public static String[] prepend(String[] pieces, String prepend) {
+		String[] result = new String[pieces.length];
+
+		for(int i=0; i<pieces.length; i++) {
+			result[i] = prepend + pieces[i];
+		}
+
+		return result;
+	}
 }
