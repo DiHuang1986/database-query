@@ -94,7 +94,7 @@ public class Query {
     }
 
     public Query whereIn(String token, Object[] list) {
-        if (token == null || "".equals(token.trim()) || list.length < 1)
+        if (token == null || "".equals(token.trim()))
             return this;
 
         this.whereInList.put(token, list);
@@ -183,14 +183,17 @@ public class Query {
 
             _appendWhere(buffer);
 
-            String[] names = SQLHelper.generateArrayOfNamedParameters(key, value.length);
+            if (value != null && value.length > 0) {
+                String[] names = SQLHelper.generateArrayOfNamedParameters(key, value.length);
 
-            buffer.append(String.format(" %s in ( %s )", key, SQLHelper.generateArrayOfNamedParameterString(key, value.length)));
+                buffer.append(String.format(" %s in ( %s )", key, SQLHelper.generateArrayOfNamedParameterString(key, value.length)));
 
-            for (int i = 0; i < value.length; i++) {
-                param(names[i], value[i]);
+                for (int i = 0; i < value.length; i++) {
+                    param(names[i], value[i]);
+                }
+            } else {
+                buffer.append(" false ");
             }
-
         }
     }
 

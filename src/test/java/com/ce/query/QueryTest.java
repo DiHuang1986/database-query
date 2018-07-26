@@ -50,15 +50,6 @@ public class QueryTest {
         closeConnection(conn);
     }
 
-    @AfterClass
-    public static void afterClass () throws SQLException {
-        Connection connection = getConnection();
-        Query.connect(connection)
-                .statement("drop table people")
-                .execute();
-        closeConnection(connection);
-    }
-
     Connection connection;
 
     @Before
@@ -174,6 +165,12 @@ public class QueryTest {
                 .get();
         assertThat(rows.size()).isEqualTo(2);
         assertThat(rows.get(0).get("id")).isEqualTo(1);
+
+        List<Row> nextRows = Query.connect(connection)
+                .table("people")
+                .whereIn("name", new String[0])
+                .get();
+        assertThat(nextRows.size()).isEqualTo(0);
     }
 
     @Test
