@@ -57,6 +57,7 @@ public class QueryTest {
         connection = getConnection();
     }
 
+    @After
     public void after() throws SQLException {
         closeConnection(connection);
     }
@@ -295,19 +296,3 @@ public class QueryTest {
     }
 }
 
-class People {
-    public int id;
-    public String name;
-    public int age;
-}
-
-class PeopleRowMapping implements IRowToEntityHandler<People> {
-    @Override
-    public People map(IRow row) {
-        People p = new People();
-        p.id = row.getAsInteger("id");
-        p.name = row.getAsString("name");
-        p.age = row.getAsInteger("age");
-        return p;
-    }
-}

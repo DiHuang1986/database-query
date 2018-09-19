@@ -35,7 +35,7 @@ public class DatabaseWrapper {
 
             T result = execution.execute(connection);
             return result;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new QueryException(e);
         } finally {
@@ -63,18 +63,6 @@ public class DatabaseWrapper {
             }
 
             return result;
-        }
-        // sql exception, throw QueryException
-        catch (SQLException se) {
-            se.printStackTrace();
-            rollback();
-            throw new QueryException(se);
-        }
-        // runtime exception, re-throw it
-        catch (RuntimeException re) {
-            re.printStackTrace();
-            rollback();
-            throw re;
         }
         // catch ANY exception, will rollback
         catch (Exception e) {

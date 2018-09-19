@@ -8,5 +8,11 @@ import java.sql.SQLException;
  */
 public interface IDatabaseExecution<T> {
 
+    /**
+     * execution of the database
+     * @param connection
+     * @return
+     * @throws SQLException
+     */
     T execute(Connection connection) throws SQLException;
 }

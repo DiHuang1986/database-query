@@ -42,28 +42,56 @@ public class Query {
         return new Query(connection);
     }
 
+    /**
+     * set table of Query object
+     * @param table
+     * @return
+     */
     public Query table(String table) {
         this.table = table;
         return this;
     }
 
+    /**
+     * set select query of Query object
+     * @param select
+     * @return
+     */
     public Query select(String select) {
         this.select = select;
         return this;
     }
 
+    /**
+     * join other table by join criteria
+     * @param otherTable
+     * @param joinCriteria
+     * @return
+     */
     public Query join(String otherTable, String joinCriteria) {
         String join = String.format(" join %s on %s ", otherTable, joinCriteria);
         joins.add(join);
         return this;
     }
 
+    /**
+     * left join table by join criteria
+     * @param otherTable
+     * @param joinCriteria
+     * @return
+     */
     public Query leftJoin(String otherTable, String joinCriteria) {
         String join = String.format(" left join %s on %s ", otherTable, joinCriteria);
         joins.add(join);
         return this;
     }
 
+    /**
+     * right join table by join criteria
+     * @param otherTable
+     * @param joinCriteria
+     * @return
+     */
     public Query rightJoin(String otherTable, String joinCriteria) {
         String join = String.format(" right join %s on %s ", otherTable, joinCriteria);
         joins.add(join);
@@ -73,7 +101,13 @@ public class Query {
     /**
      * use statement to execute complex sql query. <br>
      * Be aware, using statement will only respect <code>params</code>
-     *
+     * <code>
+     *     Query.connect(connection)
+     *         .statement("select * from people where name = :name")
+     *         .param("name", "test")
+     *         .where("age", 5) // will be ignored
+     *         .all();
+     * </code>
      * @param statement
      * @return
      */
@@ -82,17 +116,46 @@ public class Query {
         return this;
     }
 
+    /**
+     * add where criteria, but raw
+     * <code>
+     *     query.whereRaw("people.age > 20");
+     * </code>
+     * @param where
+     * @return
+     */
     public Query whereRaw(String where) {
         this.whereRawList.add(where);
         return this;
     }
 
+    /**
+     * add where criteria by only accept `=` operation;
+     * <code>
+     *     Query.connect(connection)
+     *         .table("people")
+     *         .where("name", "test")
+     *         .all();
+     * </code>
+     * @param token
+     * @param value
+     * @return
+     */
     public Query where(String token, Object value) {
         this.whereList.add(token);
         this.param(token, value);
         return this;
     }
 
+    /**
+     * add where criteria for in list
+     * <code>
+     *     query.whereIn("name", new String[] {"test 1", "test 2"});
+     * </code>
+     * @param token
+     * @param list
+     * @return
+     */
     public Query whereIn(String token, Object[] list) {
         if (token == null || "".equals(token.trim()))
             return this;
@@ -101,6 +164,15 @@ public class Query {
         return this;
     }
 
+    /**
+     * add where like criteria, used to search some field
+     * <code>
+     *     query.whereLike("name", "David");
+     * </code>
+     * @param token
+     * @param value
+     * @return
+     */
     public Query whereLike(String token, String value) {
         if (token == null || token.trim().length() == 0)
             return this;
@@ -112,28 +184,56 @@ public class Query {
         return this;
     }
 
+    /**
+     * add paginate
+     * @param page
+     * @param perPage
+     * @return
+     */
     public Query paginate(int page, int perPage) {
         this.page = page;
         this.perPage = perPage;
         return this;
     }
 
+    /**
+     * add order by
+     * @param orderBy
+     * @param order
+     * @return
+     */
     public Query orderBy(String orderBy, String order) {
         this.orderBy = orderBy;
         this.order = order;
         return this;
     }
 
+    /**
+     * add group by
+     * @param groupBy
+     * @return
+     */
     public Query groupBy(String groupBy) {
         this.groupBy = groupBy;
         return this;
     }
 
+    /**
+     * take a param with a key
+     * @param key
+     * @param value
+     * @return
+     */
     public Query param(String key, Object value) {
         this.params.put(key, value);
         return this;
     }
 
+    /**
+     * take a map as params, each of them will be applied to Query object as param
+     * @param map
+     * @return
+     */
     public Query params(Map<String, Object> map) {
         this.params.putAll(map);
         return this;
@@ -294,8 +394,7 @@ public class Query {
     }
 
     /**
-     * get list of selections but will ignore all pagination part
-     *
+     * get all query result, will ignore the pagination
      * @return
      */
     public List<Row> all() {
@@ -314,10 +413,20 @@ public class Query {
         return executeQuery(sql);
     }
 
+    /**
+     * get all query result and process with given handler
+     * @param handler
+     * @param <T>
+     * @return
+     */
     public <T> List<T> all(IRowToEntityHandler<T> handler) {
         return processRow(all(), handler);
     }
 
+    /**
+     * execute query, return boolean as execution result
+     * @return
+     */
     public boolean execute() {
         String sql = null;
 
@@ -333,7 +442,16 @@ public class Query {
         return execute(sql);
     }
 
-    //
+    /**
+     * Execute the given SQL statement, and will apply params before executing.
+     * <code>
+     *     Query q = new Query();
+     *     q.param("name", "some");
+     *     q.execute("update people set gender = 'male' where name = :name");
+     * </code>
+     * @param sql
+     * @return
+     */
     public boolean execute(String sql) {
 
         NamedParameterStatement statement = null;
@@ -355,6 +473,16 @@ public class Query {
         }
     }
 
+    /**
+     * Execute the given SQL statement, and will apply params before executing.
+     * <code>
+     *     Query q = new Query();
+     *     q.param("name", "some");
+     *     int result = q.executeUpdate("update people set gender = 'male' where name = :name");
+     * </code>
+     * @param sql
+     * @return
+     */
     public int executeUpdate(String sql) {
 
         NamedParameterStatement statement = null;
@@ -376,6 +504,16 @@ public class Query {
         }
     }
 
+    /**
+     * Execute the given SQL statement query, and will apply params before executing.
+     * <code>
+     *     List<Row> rows = Query.connect(conenction)
+     *         .param("name", "test")
+     *         .executeQuery("select * from people where name = :name");
+     * </code>
+     * @param sql
+     * @return
+     */
     public List<Row> executeQuery(String sql) {
 
         NamedParameterStatement statement = null;
@@ -428,6 +566,12 @@ public class Query {
         return null;
     }
 
+    /**
+     * get first query result and process it with given handler
+     * @param mapper
+     * @param <T>
+     * @return
+     */
     public <T> T first(IRowToEntityHandler<T> mapper) {
         return mapper.map(this.first());
     }
