@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.ce.query.exception.QueryException;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,8 +14,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class DatabaseWrapperTest {
     static DataSource dataSource;
@@ -51,6 +50,18 @@ public class DatabaseWrapperTest {
                 "insert into exam_score values(2, 2, 20);" +
                 "insert into exam_score values(3, 2, 30);" +
                 "insert into exam_score values(4, 2, 40);";
+        Query.connect(conn)
+                .statement(initSql)
+                .execute();
+        conn.close();
+    }
+
+    @After
+    public void after() throws SQLException {
+        Connection conn = dataSource.getConnection();
+        String initSql = "drop table if exists people;" +
+                "drop table if exists student;" +
+                "drop table if exists exam_score;";
         Query.connect(conn)
                 .statement(initSql)
                 .execute();
