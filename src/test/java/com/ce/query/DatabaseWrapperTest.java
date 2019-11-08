@@ -1,19 +1,23 @@
 package com.ce.query;
 
-import static org.assertj.core.api.Assertions.*;
-
 import com.ce.query.exception.QueryException;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class DatabaseWrapperTest {
     static DataSource dataSource;
@@ -97,17 +101,17 @@ public class DatabaseWrapperTest {
     }
 
     @Test
-    public void executeWithException () throws SQLException {
-        try {
-            databaseWrapper.execute(connection -> {
-                Query.connect(connection)
-                        .statement("insert into people values (10, 'TEST 10', 10)")
-                        .execute();
-                if (true) throw new RuntimeException();
-            });
-        } catch (Exception e) {
-            assertThat(e).isOfAnyClassIn(QueryException.class);
-        }
+    public void executeWithException() throws SQLException {
+
+        assertThatExceptionOfType(QueryException.class)
+                .isThrownBy(() -> {
+                    databaseWrapper.execute(connection -> {
+                        Query.connect(connection)
+                                .statement("insert into people values (10, 'TEST 10', 10)")
+                                .execute();
+                        if (true) throw new RuntimeException();
+                    });
+                });
 
         // people 10 will be saved
         Row row = Query.connect(dataSource.getConnection())
@@ -145,5 +149,45 @@ public class DatabaseWrapperTest {
                 .where("id", 1)
                 .first();
         assertThat(row.get("name")).isNotEqualTo("TEST 1 NEW NAME");
+    }
+
+    @Test
+    public void givenMultiThread_whenCloseEachOwnConnection_thenNoException() throws ExecutionException, InterruptedException {
+        CountDownLatch latch = new CountDownLatch(100);
+        AtomicInteger count = new AtomicInteger(100);
+        ExecutorService executorService = Executors.newFixedThreadPool(100);
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < 100; i++) {
+            final int index = i;
+            executorService.execute(() -> {
+                databaseWrapper.transaction(connection -> {
+                    try {
+                        System.out.println("t[" + index + "]: start");
+                        Thread.sleep(index * 10);
+                        if (connection.isClosed()) {
+                            throw new RuntimeException("connection closed");
+                        }
+                        System.out.println("t[" + index + "]: end");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        latch.countDown();
+                    }
+                    return 1;
+                });
+
+                count.decrementAndGet();
+            });
+        }
+
+        latch.await();
+
+        echo("duration is " + (System.currentTimeMillis() - start));
+        assertThat(count.get()).isEqualTo(1);
+    }
+
+    public void echo(Object o) {
+        System.out.println(o);
     }
 }

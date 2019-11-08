@@ -26,6 +26,8 @@ public class Query {
     private List<String> whereLikeList = new ArrayList<String>();
     private int page = 0;
     private int perPage = 0;
+    private int skip = 0;
+    private int take = 0;
     private String orderBy;
     private String order;
     private String groupBy;
@@ -44,6 +46,7 @@ public class Query {
 
     /**
      * set table of Query object
+     *
      * @param table
      * @return
      */
@@ -54,6 +57,7 @@ public class Query {
 
     /**
      * set select query of Query object
+     *
      * @param select
      * @return
      */
@@ -64,6 +68,7 @@ public class Query {
 
     /**
      * join other table by join criteria
+     *
      * @param otherTable
      * @param joinCriteria
      * @return
@@ -76,6 +81,7 @@ public class Query {
 
     /**
      * left join table by join criteria
+     *
      * @param otherTable
      * @param joinCriteria
      * @return
@@ -88,6 +94,7 @@ public class Query {
 
     /**
      * right join table by join criteria
+     *
      * @param otherTable
      * @param joinCriteria
      * @return
@@ -102,12 +109,13 @@ public class Query {
      * use statement to execute complex sql query. <br>
      * Be aware, using statement will only respect <code>params</code>
      * <code>
-     *     Query.connect(connection)
-     *         .statement("select * from people where name = :name")
-     *         .param("name", "test")
-     *         .where("age", 5) // will be ignored
-     *         .all();
+     * Query.connect(connection)
+     * .statement("select * from people where name = :name")
+     * .param("name", "test")
+     * .where("age", 5) // will be ignored
+     * .all();
      * </code>
+     *
      * @param statement
      * @return
      */
@@ -119,8 +127,9 @@ public class Query {
     /**
      * add where criteria, but raw
      * <code>
-     *     query.whereRaw("people.age > 20");
+     * query.whereRaw("people.age > 20");
      * </code>
+     *
      * @param where
      * @return
      */
@@ -132,11 +141,12 @@ public class Query {
     /**
      * add where criteria by only accept `=` operation;
      * <code>
-     *     Query.connect(connection)
-     *         .table("people")
-     *         .where("name", "test")
-     *         .all();
+     * Query.connect(connection)
+     * .table("people")
+     * .where("name", "test")
+     * .all();
      * </code>
+     *
      * @param token
      * @param value
      * @return
@@ -150,8 +160,9 @@ public class Query {
     /**
      * add where criteria for in list
      * <code>
-     *     query.whereIn("name", new String[] {"test 1", "test 2"});
+     * query.whereIn("name", new String[] {"test 1", "test 2"});
      * </code>
+     *
      * @param token
      * @param list
      * @return
@@ -167,8 +178,9 @@ public class Query {
     /**
      * add where like criteria, used to search some field
      * <code>
-     *     query.whereLike("name", "David");
+     * query.whereLike("name", "David");
      * </code>
+     *
      * @param token
      * @param value
      * @return
@@ -186,6 +198,7 @@ public class Query {
 
     /**
      * add paginate
+     *
      * @param page
      * @param perPage
      * @return
@@ -197,7 +210,30 @@ public class Query {
     }
 
     /**
+     * skip number of items
+     *
+     * @param skip
+     * @return
+     */
+    public Query skip(int skip) {
+        this.skip = skip;
+        return this;
+    }
+
+    /**
+     * take number of items
+     *
+     * @param take
+     * @return
+     */
+    public Query take(int take) {
+        this.take = take;
+        return this;
+    }
+
+    /**
      * add order by
+     *
      * @param orderBy
      * @param order
      * @return
@@ -210,6 +246,7 @@ public class Query {
 
     /**
      * add group by
+     *
      * @param groupBy
      * @return
      */
@@ -220,6 +257,7 @@ public class Query {
 
     /**
      * take a param with a key
+     *
      * @param key
      * @param value
      * @return
@@ -231,6 +269,7 @@ public class Query {
 
     /**
      * take a map as params, each of them will be applied to Query object as param
+     *
      * @param map
      * @return
      */
@@ -395,26 +434,16 @@ public class Query {
 
     /**
      * get all query result, will ignore the pagination
+     *
      * @return
      */
     public List<Row> all() {
-        String sql = null;
-
-        if (statement != null) {
-            sql = statement;
-        } else {
-            StringBuffer buffer = _buildSqlBase();
-
-            _buildSelect(buffer);
-
-            sql = buffer.toString();
-        }
-
-        return executeQuery(sql);
+        return executeQuery(this.toSql());
     }
 
     /**
      * get all query result and process with given handler
+     *
      * @param handler
      * @param <T>
      * @return
@@ -425,30 +454,21 @@ public class Query {
 
     /**
      * execute query, return boolean as execution result
+     *
      * @return
      */
     public boolean execute() {
-        String sql = null;
-
-        if (statement != null) {
-            sql = statement;
-        } else {
-            StringBuffer buffer = _buildSqlBase();
-
-            _buildSelect(buffer);
-            sql = buffer.toString();
-        }
-
-        return execute(sql);
+        return execute(this.toSql());
     }
 
     /**
      * Execute the given SQL statement, and will apply params before executing.
      * <code>
-     *     Query q = new Query();
-     *     q.param("name", "some");
-     *     q.execute("update people set gender = 'male' where name = :name");
+     * Query q = new Query();
+     * q.param("name", "some");
+     * q.execute("update people set gender = 'male' where name = :name");
      * </code>
+     *
      * @param sql
      * @return
      */
@@ -463,23 +483,18 @@ public class Query {
         } catch (SQLException e) {
             throw new QueryException("SQL Exception", e);
         } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            this.closeStatement(statement);
         }
     }
 
     /**
      * Execute the given SQL statement, and will apply params before executing.
      * <code>
-     *     Query q = new Query();
-     *     q.param("name", "some");
-     *     int result = q.executeUpdate("update people set gender = 'male' where name = :name");
+     * Query q = new Query();
+     * q.param("name", "some");
+     * int result = q.executeUpdate("update people set gender = 'male' where name = :name");
      * </code>
+     *
      * @param sql
      * @return
      */
@@ -494,23 +509,18 @@ public class Query {
         } catch (SQLException e) {
             throw new QueryException("SQL Exception", e);
         } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            this.closeStatement(statement);
         }
     }
 
     /**
      * Execute the given SQL statement query, and will apply params before executing.
      * <code>
-     *     List<Row> rows = Query.connect(conenction)
-     *         .param("name", "test")
-     *         .executeQuery("select * from people where name = :name");
+     * List<Row> rows = Query.connect(conenction)
+     * .param("name", "test")
+     * .executeQuery("select * from people where name = :name");
      * </code>
+     *
      * @param sql
      * @return
      */
@@ -534,21 +544,8 @@ public class Query {
             e.printStackTrace();
             throw new QueryException("I/O Exception", e);
         } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            this.closeResultSet(rs);
+            this.closeStatement(statement);
         }
     }
 
@@ -568,6 +565,7 @@ public class Query {
 
     /**
      * get first query result and process it with given handler
+     *
      * @param mapper
      * @param <T>
      * @return
@@ -672,4 +670,33 @@ public class Query {
         return result;
     }
 
+
+    private void closeStatement(NamedParameterStatement statement) {
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void closeResultSet(ResultSet rs) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private String toSql() {
+        if (this.statement != null) {
+            return this.statement;
+        }
+        StringBuffer buffer = _buildSqlBase();
+        _buildSelect(buffer);
+        return buffer.toString();
+    }
 }

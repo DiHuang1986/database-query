@@ -2,7 +2,6 @@ package com.ce.query;
 
 import com.ce.query.contract.IDatabaseExecution;
 import com.ce.query.contract.IDatabaseExecutionVoid;
-import com.ce.query.exception.ConnectionFailException;
 import com.ce.query.exception.QueryException;
 
 import javax.sql.DataSource;
@@ -38,9 +37,9 @@ public class DatabaseWrapper {
 
             T result = execution.execute(threadLocalConnection.get());
             return result;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
-            throw new QueryException(e);
+            throw new QueryException("DatabaseWrapper execution failed", e);
         } finally {
             // if can close, close the connection
             if (isLocalOpenedConnection) {
@@ -68,10 +67,15 @@ public class DatabaseWrapper {
             return result;
         }
         // catch ANY exception, will rollback
-        catch (Exception e) {
+        catch (Throwable e) {
             e.printStackTrace();
-            rollback(threadLocalConnection.get());
-            throw new QueryException(e);
+            try {
+                rollback(threadLocalConnection.get());
+            } catch (SQLException ex) {
+                throw new QueryException("transaction failed, then rollback failed", ex);
+            }
+
+            throw new QueryException("transaction failed", e);
         }
         // finally close the connection
         finally {
@@ -114,6 +118,23 @@ public class DatabaseWrapper {
         return false;
     }
 
+
+    private boolean closeConnection() {
+        if (threadLocalConnection.get() == null) {
+            throw new QueryException("connection is null");
+        }
+
+        try {
+            threadLocalConnection.get().close();
+        } catch (SQLException e) {
+            throw new QueryException("connection close failed", e);
+        }
+
+        // clear connection
+        threadLocalConnection.set(null);
+        return true;
+    }
+
     /**
      * if is new opened transaction, return true <br/>
      * otherwise, return false <br/>
@@ -150,29 +171,8 @@ public class DatabaseWrapper {
         connection.setAutoCommit(threadLocalPreviousAutoCommit.get());
     }
 
-    private boolean closeConnection() {
-        try {
-            if (threadLocalConnection.get() != null) {
-                threadLocalConnection.get().close();
-            }
-        } catch (SQLException e) {
-            throw new ConnectionFailException(e);
-        }
-
-        // clear connection
-        threadLocalConnection.set(null);
-        return true;
-    }
-
-    private void rollback(Connection connection) {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.rollback();
-            }
-        } catch (SQLException e1) {
-            e1.printStackTrace();
-        }
-
+    private void rollback(Connection connection) throws SQLException {
+        connection.rollback();
         threadLocalIsInActiveTransaction.set(Boolean.FALSE);
     }
 
