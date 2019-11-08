@@ -1,14 +1,11 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
+plugins {
+    id 'java'
+    id 'idea'
+    id "io.freefair.lombok" version "4.1.3"
 }
 
 group 'com.ce.query'
 version '1.3'
-
-apply plugin: 'java'
-apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 
