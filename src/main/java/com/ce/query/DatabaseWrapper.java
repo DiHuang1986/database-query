@@ -15,51 +15,54 @@ import java.sql.SQLException;
 public class DatabaseWrapper {
 
     private DataSource dataSource;
-    private Connection connection;
 
-    private boolean isInActiveTransaction = false;
-    private boolean previousAutoCommit = false;
+    // all method are synchronized, however, different thread access different method still share same connection.
+    // which might be closed by other thread
+    private ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
+
+    private ThreadLocal<Boolean> threadLocalIsInActiveTransaction = new ThreadLocal<>();
+    private ThreadLocal<Boolean> threadLocalPreviousAutoCommit = new ThreadLocal<>();
 
     public DatabaseWrapper(DataSource ds) {
-        if(ds == null) {
+        if (ds == null) {
             throw new QueryException("data source is required");
         }
         this.dataSource = ds;
     }
 
-    public synchronized <T> T execute(IDatabaseExecution<T> execution) {
-        boolean canCloseConnection = false;
+    public <T> T execute(IDatabaseExecution<T> execution) {
+        boolean isLocalOpenedConnection = false;
 
         try {
-            canCloseConnection = openConnection();
+            isLocalOpenedConnection = openConnection();
 
-            T result = execution.execute(connection);
+            T result = execution.execute(threadLocalConnection.get());
             return result;
         } catch (Exception e) {
             e.printStackTrace();
             throw new QueryException(e);
         } finally {
             // if can close, close the connection
-            if (canCloseConnection) {
+            if (isLocalOpenedConnection) {
                 closeConnection();
             }
         }
     }
 
-    public synchronized <T> T transaction(IDatabaseExecution<T> execution) {
-        boolean canCloseConnection = false;
-        boolean canCommit = false;
+    public <T> T transaction(IDatabaseExecution<T> execution) {
+        boolean isLocalOpenedConnection = false;
+        boolean canCommit;
 
         try {
             // open connection and transaction
-            canCloseConnection = openConnection();
-            canCommit = openTransaction(connection);
+            isLocalOpenedConnection = openConnection();
+            canCommit = openTransaction(threadLocalConnection.get());
 
-            T result = execution.execute(connection);
+            T result = execution.execute(threadLocalConnection.get());
 
             // close transaction
             if (canCommit) {
-                closeTransaction(connection);
+                closeTransaction(threadLocalConnection.get());
             }
 
             return result;
@@ -67,25 +70,25 @@ public class DatabaseWrapper {
         // catch ANY exception, will rollback
         catch (Exception e) {
             e.printStackTrace();
-            rollback();
+            rollback(threadLocalConnection.get());
             throw new QueryException(e);
         }
         // finally close the connection
         finally {
-            if (canCloseConnection) {
+            if (isLocalOpenedConnection) {
                 closeConnection();
             }
         }
     }
 
-    public synchronized void execute(IDatabaseExecutionVoid execution) {
+    public void execute(IDatabaseExecutionVoid execution) {
         this.execute(connection -> {
             execution.execute(connection);
             return null;
         });
     }
 
-    public synchronized void transaction(IDatabaseExecutionVoid execution) {
+    public void transaction(IDatabaseExecutionVoid execution) {
         this.transaction(connection -> {
             execution.execute(connection);
             return null;
@@ -93,32 +96,40 @@ public class DatabaseWrapper {
     }
 
 
-    /*
-    openConnection method
+    /**
+     * open connection, if newly opened connection, return true <br>
+     * otherwise, return false
+     *
+     * @return
+     * @throws SQLException
      */
     private boolean openConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = dataSource.getConnection();
+        if (threadLocalConnection.get() == null
+                || threadLocalConnection.get().isClosed()
+        ) {
+            threadLocalConnection.set(dataSource.getConnection());
             return true;
         }
 
         return false;
     }
 
-    /*
-    openTransaction method
-
-    if we already in a transaction, will return false, means we do NOT have right to commit the transaction.
-    if we are not in a active transaction, we will mark the wrapper `in active transaction`, and return true,
-    means we have right to commit the transaction
+    /**
+     * if is new opened transaction, return true <br/>
+     * otherwise, return false <br/>
+     * <br/>
+     *
+     * @param connection
+     * @return
+     * @throws SQLException
      */
     private boolean openTransaction(Connection connection) throws SQLException {
-        if (isInActiveTransaction) {
+        if (Boolean.TRUE.equals(threadLocalIsInActiveTransaction.get())) {
             return false;
         }
 
-        isInActiveTransaction = true;
-        previousAutoCommit = connection.getAutoCommit();
+        threadLocalIsInActiveTransaction.set(Boolean.TRUE);
+        threadLocalPreviousAutoCommit.set(connection.getAutoCommit());
 
         // turn off auto commit
         connection.setAutoCommit(false);
@@ -127,33 +138,33 @@ public class DatabaseWrapper {
     }
 
     private void closeTransaction(Connection connection) throws SQLException {
-        if (!isInActiveTransaction) {
+        if (!Boolean.TRUE.equals(threadLocalIsInActiveTransaction.get())) {
             return;
         }
 
         connection.commit();
 
-        isInActiveTransaction = false;
+        threadLocalIsInActiveTransaction.set(Boolean.FALSE);
 
         // reset auto commit
-        connection.setAutoCommit(previousAutoCommit);
+        connection.setAutoCommit(threadLocalPreviousAutoCommit.get());
     }
 
     private boolean closeConnection() {
         try {
-            if (connection != null) {
-                connection.close();
+            if (threadLocalConnection.get() != null) {
+                threadLocalConnection.get().close();
             }
         } catch (SQLException e) {
             throw new ConnectionFailException(e);
         }
 
         // clear connection
-        connection = null;
+        threadLocalConnection.set(null);
         return true;
     }
 
-    private void rollback() {
+    private void rollback(Connection connection) {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.rollback();
@@ -162,7 +173,7 @@ public class DatabaseWrapper {
             e1.printStackTrace();
         }
 
-        isInActiveTransaction = false;
+        threadLocalIsInActiveTransaction.set(Boolean.FALSE);
     }
 
 }
