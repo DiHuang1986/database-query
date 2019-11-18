@@ -24,8 +24,6 @@ public class Query {
     private List<String> whereList = new ArrayList<String>();
     private Map<String, Object[]> whereInList = new HashMap<String, Object[]>();
     private List<String> whereLikeList = new ArrayList<String>();
-    private int page = 0;
-    private int perPage = 0;
     private int skip = 0;
     private int take = 0;
     private String orderBy;
@@ -33,10 +31,10 @@ public class Query {
     private String groupBy;
     private String statement;
     private List<String> joins = new ArrayList<String>();
-    private Map<String, Object> params = new HashMap<String, Object>();
+    private Map<String, Object> params = new HashMap<>();
     private Connection connection;
 
-    public Query(Connection connection) {
+    private Query(Connection connection) {
         this.connection = connection;
     }
 
@@ -51,6 +49,10 @@ public class Query {
      * @return
      */
     public Query table(String table) {
+        return this.from(table);
+    }
+
+    public Query from(String table) {
         this.table = table;
         return this;
     }
@@ -133,7 +135,7 @@ public class Query {
      * @param where
      * @return
      */
-    public Query whereRaw(String where) {
+    public Query where(String where) {
         this.whereRawList.add(where);
         return this;
     }
@@ -204,8 +206,8 @@ public class Query {
      * @return
      */
     public Query paginate(int page, int perPage) {
-        this.page = page;
-        this.perPage = perPage;
+        this.take = perPage;
+        this.skip = (page - 1) * perPage;
         return this;
     }
 
@@ -422,9 +424,11 @@ public class Query {
     }
 
     private void _buildPagination(StringBuffer buffer) {
-        // add pagination
-        if (page > 0 && perPage > 0) {
-            buffer.append(String.format(" offset %s rows fetch next %s rows only ", (page - 1) * perPage, perPage));
+        if (this.skip > 0) {
+            buffer.append(String.format(" offset %s rows ", skip));
+        }
+        if (this.take > 0) {
+            buffer.append(String.format(" fetch next %s rows only ", take));
         }
     }
 
@@ -691,7 +695,7 @@ public class Query {
         }
     }
 
-    private String toSql() {
+    public String toSql() {
         if (this.statement != null) {
             return this.statement;
         }

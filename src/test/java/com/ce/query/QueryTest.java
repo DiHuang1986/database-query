@@ -1,12 +1,9 @@
 package com.ce.query;
 
-import static org.assertj.core.api.Assertions.*;
-
-import com.ce.query.contract.IRow;
-import com.ce.query.contract.IRowToEntityHandler;
-import org.junit.*;
-
-import javax.sql.DataSource;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,6 +11,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class QueryTest {
@@ -28,7 +27,7 @@ public class QueryTest {
     }
 
     @BeforeClass
-    public static void beforeClass () throws SQLException {
+    public static void beforeClass() throws SQLException {
         Connection conn = getConnection();
         String initSql = "create table people (id integer, name varchar, age integer);" +
                 "insert into people values (1, 'TEST 1', 1);" +
@@ -142,7 +141,7 @@ public class QueryTest {
     public void whereRaw() {
         List<Row> rows = Query.connect(connection)
                 .table("people")
-                .whereRaw("name = 'TEST 1'")
+                .where("name = 'TEST 1'")
                 .get();
         assertThat(rows.size()).isEqualTo(1);
         assertThat(rows.get(0).get("id")).isEqualTo(1);
@@ -162,7 +161,7 @@ public class QueryTest {
     public void whereIn() {
         List<Row> rows = Query.connect(connection)
                 .table("people")
-                .whereIn("name", new String[] { "TEST 1", "TEST 2" })
+                .whereIn("name", new String[]{"TEST 1", "TEST 2"})
                 .get();
         assertThat(rows.size()).isEqualTo(2);
         assertThat(rows.get(0).get("id")).isEqualTo(1);
@@ -212,14 +211,14 @@ public class QueryTest {
                 .groupBy("student_id")
                 .get();
         assertThat(rows.size()).isEqualTo(2);
-        assertThat(rows.get(1).getAsInteger("sum")).isEqualTo(90);
+        assertThat(rows.get(1).getAs("sum", Integer.class)).isEqualTo(90);
     }
 
     @Test
     public void param() {
         List<Row> rows = Query.connect(connection)
                 .table("people")
-                .whereRaw("age > :age")
+                .where("age > :age")
                 .param("age", 1)
                 .get();
         assertThat(rows.size()).isEqualTo(3);
@@ -232,7 +231,7 @@ public class QueryTest {
         map.put("age", 1);
         List<Row> rows = Query.connect(connection)
                 .table("people")
-                .whereRaw("age > :age")
+                .where("age > :age")
                 .params(map)
                 .get();
         assertThat(rows.size()).isEqualTo(3);
@@ -266,7 +265,7 @@ public class QueryTest {
                 .first();
 
         assertThat(row).isNotNull();
-        assertThat(row.getAsInteger("id")).isEqualTo(1);
+        assertThat(row.getAs("id", Integer.class)).isEqualTo(1);
     }
 
     @Test
@@ -293,6 +292,18 @@ public class QueryTest {
                 .table("exam_score")
                 .count("distinct student_id");
         assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    public void selectNest() {
+
+        Query.connect(connection)
+                .select("student.*, (select avg(score) from exam_score) as average_score")
+                .from("student")
+                .all(row -> {
+                    System.out.println(row.get("average_score"));
+                    return null;
+                });
     }
 }
 

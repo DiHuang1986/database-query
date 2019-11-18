@@ -7,9 +7,9 @@ class PeopleRowMapping implements IRowToEntityHandler<People> {
     @Override
     public People map(IRow row) {
         People p = new People();
-        p.id = row.getAsInteger("id");
-        p.name = row.getAsString("name");
-        p.age = row.getAsInteger("age");
+        p.id = row.getAs("id", Integer.class);
+        p.name = row.getAs("name", String.class);
+        p.age = row.getAs("age", Integer.class);
         return p;
     }
 }

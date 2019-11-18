@@ -1,7 +1,7 @@
 package com.ce.query;
 
 class People {
-    public int id;
+    public Integer id;
     public String name;
-    public int age;
+    public Integer age;
 }

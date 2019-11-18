@@ -1,9 +1,8 @@
 package com.ce.query;
 
 import com.ce.query.contract.IRow;
-import com.ce.query.lib.ConvertUtil;
+import com.ce.query.converter.ConverterFactory;
 
-import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,33 +16,11 @@ public class Row implements IRow {
     private static final long serialVersionUID = 2965345640259342192L;
     private Map<String, Object> data = new HashMap<String, Object>();
 
-    public Boolean getAsBoolean(String key) {
+    @Override
+    public <T> T getAs(String key, Class<T> t) {
         Object o = this.get(key);
-        return ConvertUtil.asBoolean(o);
-    }
-
-    public Integer getAsInteger(String key) {
-        Object o = this.get(key);
-        return ConvertUtil.asInteger(o);
-    }
-
-    public Long getAsLong(String key) {
-        Object o = this.get(key);
-        return ConvertUtil.asLong(o);
-    }
-
-    public Double getAsDouble(String key) {
-        Object o = this.get(key);
-        return ConvertUtil.asDouble(o);
-    }
-
-    public String getAsString(String key) {
-        Object o = this.get(key);
-        return ConvertUtil.asString(o);
-    }
-
-    public Timestamp getAsTimestamp(String key) {
-        return ConvertUtil.asTimestamp(this.get(key));
+        if (o == null) return null;
+        return ConverterFactory.INSTANCE.generate(Object.class, t).convert(o);
     }
 
     @Override
