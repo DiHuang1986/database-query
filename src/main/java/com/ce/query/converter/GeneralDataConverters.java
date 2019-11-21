@@ -1,25 +1,31 @@
-package com.ce.query.converter;
+package com.ce.query.fromQueryer;
 
+import com.ce.query.converter.IDataConverter;
 import com.ce.query.exception.ConvertException;
 
 import java.sql.Timestamp;
 
-public interface ObjectConverters {
-    class ObjectToBoolean implements IConverter<Object, Boolean> {
+public interface GeneralDataConverters {
 
+    class BooleanDataConverter implements IDataConverter<Boolean> {
         @Override
-        public Boolean convert(Object obj) {
+        public Boolean fromRaw(Object obj) {
             if (obj == null) return null;
             if (obj instanceof Boolean) {
                 return (Boolean) obj;
             }
             throw new ConvertException("not a boolean type: " + obj.getClass().getName());
         }
+
+        @Override
+        public Object toRaw(Boolean aBoolean) {
+            return aBoolean;
+        }
     }
 
-    class ObjectToInteger implements IConverter<Object, Integer> {
+    class IntegerDataConverter implements IDataConverter<Integer> {
         @Override
-        public Integer convert(Object obj) {
+        public Integer fromRaw(Object obj) {
             if (obj == null) return null;
 
             if (obj instanceof Integer) {
@@ -31,11 +37,16 @@ public interface ObjectConverters {
 
             throw new ConvertException("not a integer type: " + obj.getClass().getName());
         }
+
+        @Override
+        public Object toRaw(Integer integer) {
+            return integer;
+        }
     }
 
-    class ObjectToLong implements IConverter<Object, Long> {
+    class LongDataConverter implements IDataConverter<Long> {
         @Override
-        public Long convert(Object obj) {
+        public Long fromRaw(Object obj) {
             if (obj == null) return null;
 
             if (obj instanceof Long) {
@@ -47,11 +58,16 @@ public interface ObjectConverters {
 
             throw new ConvertException("not a long type: " + obj.getClass().getName());
         }
+
+        @Override
+        public Object toRaw(Long aLong) {
+            return aLong;
+        }
     }
 
-    class ObjectToDouble implements IConverter<Object, Double> {
+    class DoubleDataConverter implements IDataConverter<Double> {
         @Override
-        public Double convert(Object obj) {
+        public Double fromRaw(Object obj) {
             if (obj == null) return null;
 
             if (obj instanceof Double) {
@@ -63,28 +79,43 @@ public interface ObjectConverters {
 
             throw new ConvertException("not a double type: " + obj.getClass().getName());
         }
+
+        @Override
+        public Object toRaw(Double aDouble) {
+            return aDouble;
+        }
     }
 
-    class ObjectToString implements IConverter<Object, String> {
+    class StringDataConverter implements IDataConverter<String> {
         @Override
-        public String convert(Object obj) {
+        public String fromRaw(Object obj) {
             if (obj == null) return null;
             if (obj instanceof String) {
                 return (String) obj;
             }
             throw new ConvertException("not a string type: " + obj.getClass().getName());
         }
+
+        @Override
+        public Object toRaw(String s) {
+            return s;
+        }
     }
 
-    class ObjectToTimestamp implements IConverter<Object, Timestamp> {
+    class TimestampDataConverter implements IDataConverter<Timestamp> {
         @Override
-        public Timestamp convert(Object obj) {
+        public Timestamp fromRaw(Object obj) {
             if (obj == null) return null;
 
             if (obj instanceof Timestamp) {
                 return (Timestamp) obj;
             }
             throw new ConvertException("not a timestamp type: " + obj.getClass().getName());
+        }
+
+        @Override
+        public Object toRaw(Timestamp timestamp) {
+            return timestamp;
         }
     }
 }
