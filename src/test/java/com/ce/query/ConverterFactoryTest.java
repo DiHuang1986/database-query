@@ -16,10 +16,19 @@ public class ConverterFactoryTest {
         public String name;
         public int age;
 
+        public Bean() {
+        }
+
         public Bean(String name, int age) {
             this.name = name;
             this.age = age;
         }
+    }
+
+    class BeanSub extends Bean {
+    }
+
+    class BeanSubSub extends BeanSub {
     }
 
     class BeanDataConverter implements IDataConverter<Bean> {
@@ -39,6 +48,14 @@ public class ConverterFactoryTest {
         DataConverterManager.INSTANCE.register(Bean.class, new BeanDataConverter());
 
         assertThat(DataConverterManager.INSTANCE.lookup(Bean.class)).isExactlyInstanceOf(BeanDataConverter.class);
+    }
+
+    @Test
+    public void givenRegisteredConverter_whenGetBySubClass_thenTypeMatch() {
+        DataConverterManager.INSTANCE.register(Bean.class, new BeanDataConverter());
+
+        assertThat(DataConverterManager.INSTANCE.lookup(BeanSub.class)).isExactlyInstanceOf(BeanDataConverter.class);
+        assertThat(DataConverterManager.INSTANCE.lookup(BeanSubSub.class)).isExactlyInstanceOf(BeanDataConverter.class);
     }
 
     @Test

@@ -20,12 +20,19 @@ public class DataConverterManager {
         this.register(Timestamp.class, new GeneralDataConverters.TimestampDataConverter());
     }
 
-    private Map<Class, IDataConverter> map = new HashMap<>();
+    private Map<Class<?>, IDataConverter<?>> map = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public <T> IDataConverter<T> lookup(Class<T> targetType) {
 
-        IDataConverter<T> converter = map.get(targetType);
+        IDataConverter<T> converter = null;
+        for (Class<?> clazz : map.keySet()) {
+            if (clazz.isAssignableFrom(targetType)) {
+                converter = (IDataConverter<T>) map.get(clazz);
+                break;
+            }
+        }
+
         if (converter == null) {
             throw new ConvertException("given data type " + targetType.getSimpleName() + " is not supported");
         }
