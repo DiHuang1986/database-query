@@ -2,6 +2,8 @@ package com.ce.query;
 
 import com.ce.query.contract.IRowToEntityHandler;
 import com.ce.query.exception.QueryException;
+import com.ce.query.grammar.GrammarFactory;
+import com.ce.query.grammar.IGrammar;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -33,9 +35,19 @@ public class Query {
     private List<String> joins = new ArrayList<String>();
     private Map<String, Object> params = new HashMap<>();
     private Connection connection;
+    private IGrammar grammar;
 
     private Query(Connection connection) {
         this.connection = connection;
+        try {
+            String databaseProductName = connection.getMetaData().getDatabaseProductName();
+            this.grammar = GrammarFactory.INSTANCE.get(databaseProductName);
+            if (this.grammar == null) {
+                this.grammar = GrammarFactory.INSTANCE.get(GrammarFactory.DEFAULT);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static Query connect(Connection connection) {
@@ -425,10 +437,10 @@ public class Query {
 
     private void _buildPagination(StringBuffer buffer) {
         if (this.skip > 0) {
-            buffer.append(String.format(" offset %s rows ", skip));
+            grammar.handleSkip(buffer, skip);
         }
         if (this.take > 0) {
-            buffer.append(String.format(" fetch next %s rows only ", take));
+            grammar.handleTake(buffer, take);
         }
     }
 

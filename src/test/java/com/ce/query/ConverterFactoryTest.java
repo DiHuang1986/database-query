@@ -25,11 +25,18 @@ public class ConverterFactoryTest {
     }
 
     @Test
-    public void givenEmptyConverterFactory_whenGenerate_thenException() {
-        ConverterFactory.INSTANCE.clear();
+    public void givenNotSupportedSourceType_whenGenerate_thenException() {
         assertThatThrownBy(() -> {
             ConverterFactory.INSTANCE.generate(String.class, Object.class);
         }).isExactlyInstanceOf(RuntimeException.class)
                 .hasMessage("given source type String is not supported");
+    }
+
+    @Test
+    public void givenNotSupportedTargetType_whenGenerate_thenException() {
+        assertThatThrownBy(() -> {
+            ConverterFactory.INSTANCE.generate(Object.class, Object.class);
+        }).isExactlyInstanceOf(RuntimeException.class)
+                .hasMessage("given target type Object is not supported");
     }
 }

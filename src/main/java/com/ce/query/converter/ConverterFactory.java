@@ -44,8 +44,4 @@ public class ConverterFactory {
         Map<Class, Class<? extends IConverter>> value = map.computeIfAbsent(sourceType, k -> new HashMap<>());
         value.put(targetType, converterClass);
     }
-
-    public void clear() {
-        map.clear();
-    }
 }
