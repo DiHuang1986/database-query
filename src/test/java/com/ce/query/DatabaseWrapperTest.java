@@ -152,13 +152,33 @@ public class DatabaseWrapperTest {
     }
 
     @Test
+    public void givenNumber_whenCountDownTimes_thenNumberCountTo0() throws InterruptedException {
+        int number = 500;
+        CountDownLatch latch = new CountDownLatch(number);
+        AtomicInteger count = new AtomicInteger(number);
+        ExecutorService executorService = Executors.newFixedThreadPool(number);
+
+        for (int i = 0; i < number; i++) {
+            executorService.execute(() -> {
+                latch.countDown();
+                count.decrementAndGet();
+            });
+        }
+
+        latch.await();
+        assertThat(count.get()).isEqualTo(0);
+        assertThat(latch.getCount()).isEqualTo(0);
+    }
+
+    @Test
     public void givenMultiThread_whenCloseEachOwnConnection_thenNoException() throws ExecutionException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(100);
-        AtomicInteger count = new AtomicInteger(100);
-        ExecutorService executorService = Executors.newFixedThreadPool(100);
+        int number = 100;
+        CountDownLatch latch = new CountDownLatch(number);
+        AtomicInteger count = new AtomicInteger(number);
+        ExecutorService executorService = Executors.newFixedThreadPool(number);
         long start = System.currentTimeMillis();
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < number; i++) {
             final int index = i;
             executorService.execute(() -> {
                 databaseWrapper.transaction(connection -> {
@@ -172,19 +192,19 @@ public class DatabaseWrapperTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } finally {
+                        count.decrementAndGet();
                         latch.countDown();
                     }
                     return 1;
                 });
-
-                count.decrementAndGet();
             });
         }
 
         latch.await();
 
         echo("duration is " + (System.currentTimeMillis() - start));
-        assertThat(count.get()).isEqualTo(1);
+        assertThat(count.get()).isEqualTo(0);
+        assertThat(latch.getCount()).isEqualTo(0);
     }
 
     public void echo(Object o) {

@@ -2,7 +2,7 @@ package com.ce.query;
 
 import com.ce.query.contract.IRowToEntityHandler;
 import com.ce.query.exception.QueryException;
-import com.ce.query.grammar.GrammarFactory;
+import com.ce.query.grammar.GrammarManager;
 import com.ce.query.grammar.IGrammar;
 
 import java.io.IOException;
@@ -41,9 +41,9 @@ public class Query {
         this.connection = connection;
         try {
             String databaseProductName = connection.getMetaData().getDatabaseProductName();
-            this.grammar = GrammarFactory.INSTANCE.get(databaseProductName);
+            this.grammar = GrammarManager.INSTANCE.get(databaseProductName);
             if (this.grammar == null) {
-                this.grammar = GrammarFactory.INSTANCE.get(GrammarFactory.DEFAULT);
+                this.grammar = GrammarManager.INSTANCE.get(GrammarManager.DEFAULT);
             }
         } catch (SQLException e) {
             e.printStackTrace();

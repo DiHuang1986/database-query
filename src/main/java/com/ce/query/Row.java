@@ -1,7 +1,7 @@
 package com.ce.query;
 
 import com.ce.query.contract.IRow;
-import com.ce.query.converter.ConverterFactory;
+import com.ce.query.converter.ConverterManager;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,7 +20,7 @@ public class Row implements IRow {
     public <T> T getAs(String key, Class<T> t) {
         Object o = this.get(key);
         if (o == null) return null;
-        return ConverterFactory.INSTANCE.generate(Object.class, t).convert(o);
+        return ConverterManager.INSTANCE.generate(Object.class, t).convert(o);
     }
 
     @Override

@@ -3,14 +3,14 @@ package com.ce.query.grammar;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GrammarFactory {
+public class GrammarManager {
 
-    public static final GrammarFactory INSTANCE = new GrammarFactory();
+    public static final GrammarManager INSTANCE = new GrammarManager();
     public static final String DEFAULT = "default";
 
     private Map<String, IGrammar> map = new HashMap<>();
 
-    GrammarFactory() {
+    GrammarManager() {
         this.register(new OracleGrammar());
         this.register(new DefaultGrammar());
     }

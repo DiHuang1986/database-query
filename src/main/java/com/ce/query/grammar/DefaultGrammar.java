@@ -5,6 +5,6 @@ public class DefaultGrammar extends AbstractGrammar {
 
     @Override
     public String getDatabaseProductName() {
-        return GrammarFactory.DEFAULT;
+        return GrammarManager.DEFAULT;
     }
 }

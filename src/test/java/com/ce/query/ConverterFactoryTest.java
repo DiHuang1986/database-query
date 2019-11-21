@@ -1,7 +1,7 @@
 package com.ce.query;
 
 
-import com.ce.query.converter.ConverterFactory;
+import com.ce.query.converter.ConverterManager;
 import com.ce.query.converter.IConverter;
 import org.junit.Test;
 
@@ -19,15 +19,15 @@ public class ConverterFactoryTest {
 
     @Test
     public void givenRegisteredConverter_whenGenerate_thenTypeMatch() {
-        ConverterFactory.INSTANCE.register(Object.class, String.class, ObjectToString.class);
+        ConverterManager.INSTANCE.register(Object.class, String.class, new ObjectToString());
 
-        assertThat(ConverterFactory.INSTANCE.generate(Object.class, String.class)).isExactlyInstanceOf(ObjectToString.class);
+        assertThat(ConverterManager.INSTANCE.generate(Object.class, String.class)).isExactlyInstanceOf(ObjectToString.class);
     }
 
     @Test
     public void givenNotSupportedSourceType_whenGenerate_thenException() {
         assertThatThrownBy(() -> {
-            ConverterFactory.INSTANCE.generate(String.class, Object.class);
+            ConverterManager.INSTANCE.generate(String.class, Object.class);
         }).isExactlyInstanceOf(RuntimeException.class)
                 .hasMessage("given source type String is not supported");
     }
@@ -35,7 +35,7 @@ public class ConverterFactoryTest {
     @Test
     public void givenNotSupportedTargetType_whenGenerate_thenException() {
         assertThatThrownBy(() -> {
-            ConverterFactory.INSTANCE.generate(Object.class, Object.class);
+            ConverterManager.INSTANCE.generate(Object.class, Object.class);
         }).isExactlyInstanceOf(RuntimeException.class)
                 .hasMessage("given target type Object is not supported");
     }
