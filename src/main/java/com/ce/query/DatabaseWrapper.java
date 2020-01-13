@@ -37,9 +37,12 @@ public class DatabaseWrapper {
 
             T result = execution.execute(threadLocalConnection.get());
             return result;
-        } catch (Throwable e) {
+        } catch (SQLException sqlExp) {
+            sqlExp.printStackTrace();
+            throw new QueryException("DatabaseWrapper execute failed", sqlExp);
+        } catch (RuntimeException e) {
             e.printStackTrace();
-            throw new QueryException("DatabaseWrapper execution failed", e);
+            throw e;
         } finally {
             // if can close, close the connection
             if (isLocalOpenedConnection) {
@@ -65,20 +68,19 @@ public class DatabaseWrapper {
             }
 
             return result;
-        }
-        // catch ANY exception, will rollback
-        catch (Throwable e) {
+        } catch (SQLException sqlExp) {
+            rollback(threadLocalConnection.get());
+            sqlExp.printStackTrace();
+            // for SQLException, we wrap it into a QueryException
+            throw new QueryException("DatabaseWrapper execute failed", sqlExp);
+        } catch (RuntimeException e) {
+            rollback(threadLocalConnection.get());
             e.printStackTrace();
-            try {
-                rollback(threadLocalConnection.get());
-            } catch (SQLException ex) {
-                throw new QueryException("transaction failed, then rollback failed", ex);
-            }
-
-            throw new QueryException("transaction failed", e);
+            throw e;
         }
         // finally close the connection
         finally {
+
             if (isLocalOpenedConnection) {
                 closeConnection();
             }
@@ -171,9 +173,15 @@ public class DatabaseWrapper {
         connection.setAutoCommit(threadLocalPreviousAutoCommit.get());
     }
 
-    private void rollback(Connection connection) throws SQLException {
-        connection.rollback();
-        threadLocalIsInActiveTransaction.set(Boolean.FALSE);
+    private void rollback(Connection connection) {
+        try {
+            connection.rollback();
+            threadLocalIsInActiveTransaction.set(Boolean.FALSE);
+        } catch (SQLException e) {
+            // ignore this function because more important exception shall be thrown
+            // from parent method
+            e.printStackTrace();
+        }
     }
 
 }

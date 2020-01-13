@@ -1,6 +1,5 @@
 package com.ce.query;
 
-import com.ce.query.exception.QueryException;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -103,7 +102,7 @@ public class DatabaseWrapperTest {
     @Test
     public void executeWithException() throws SQLException {
 
-        assertThatExceptionOfType(QueryException.class)
+        assertThatExceptionOfType(RuntimeException.class)
                 .isThrownBy(() -> {
                     databaseWrapper.execute(connection -> {
                         Query.connect(connection)
@@ -134,7 +133,7 @@ public class DatabaseWrapperTest {
                 if (true) throw new RuntimeException();
             });
         } catch (Exception e) {
-            assertThat(e).isOfAnyClassIn(QueryException.class);
+            assertThat(e).isOfAnyClassIn(RuntimeException.class);
         }
 
         // people 10 will be removed because transaction is suspended
