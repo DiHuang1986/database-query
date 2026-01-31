@@ -182,7 +182,10 @@ public class Query {
      * @return
      */
     public Query whereIn(String token, Object[] list) {
-        if (token == null || "".equals(token.trim()))
+        if (token == null || token.trim().isEmpty())
+            return this;
+        
+        if (list == null)
             return this;
 
         this.whereInList.put(token, list);
@@ -381,7 +384,7 @@ public class Query {
 
     private void _buildOrderBy(StringBuilder buffer) {
         if (orderBy != null) {
-            if (!"desc".equals(order)) {
+            if (!"desc".equalsIgnoreCase(order)) {
                 order = "asc";
             }
             buffer.append(String.format(" order by %s %s ", orderBy, order));
@@ -430,7 +433,7 @@ public class Query {
 
     private void _buildSelect(StringBuilder buffer) {
         // add select
-        if (select == null || "".equals(select.trim()))
+        if (select == null || select.trim().isEmpty())
             select = "*";
         buffer.insert(0, String.format("select %s ", select));
     }
@@ -603,7 +606,7 @@ public class Query {
     }
 
     public int count(String countStr) {
-        if (countStr == null || "".equals(countStr.trim())) countStr = "*";
+        if (countStr == null || countStr.trim().isEmpty()) countStr = "*";
 
         StringBuilder buffer = _buildSqlBase();
 
@@ -612,8 +615,16 @@ public class Query {
         String sql = buffer.toString();
 
         List<Row> result = executeQuery(sql);
+        
+        if (result == null || result.isEmpty()) {
+            return 0;
+        }
 
         Object countObject = result.get(0).get("count");
+        
+        if (countObject == null) {
+            return 0;
+        }
 
         if (countObject instanceof Long) {
             return ((Long) countObject).intValue();
