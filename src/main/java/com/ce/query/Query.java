@@ -46,7 +46,7 @@ public class Query {
                 this.grammar = GrammarManager.INSTANCE.get(GrammarManager.DEFAULT);
             }
         } catch (SQLException e) {
-            throw new QueryException("Failed to initialize grammar", e);
+            throw new QueryException("Failed to initialize grammar from database metadata", e);
         }
     }
 
@@ -384,7 +384,7 @@ public class Query {
 
     private void _buildOrderBy(StringBuilder buffer) {
         if (orderBy != null) {
-            if (!"desc".equalsIgnoreCase(order)) {
+            if (order == null || !"desc".equalsIgnoreCase(order)) {
                 order = "asc";
             }
             buffer.append(String.format(" order by %s %s ", orderBy, order));

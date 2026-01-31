@@ -54,7 +54,8 @@ public class NamedParameterStatement {
         boolean inDoubleQuote = false;
         int index = 1;
         
-        Map<String, List<Integer>> tempMap = new HashMap<>();
+        // Temporary map to collect indices as lists before converting to arrays
+        Map<String, List<Integer>> listMap = new HashMap<>();
 
         for (int i = 0; i < length; i++) {
             char c = query.charAt(i);
@@ -79,28 +80,21 @@ public class NamedParameterStatement {
                     }
                     String name = query.substring(i + 1, j);
                     c = '?'; // replace the parameter with a question mark
-                    i += name.length(); // skip past the end if the parameter
+                    i += name.length(); // skip past the end of the parameter
 
-                    List<Integer> indexList = tempMap.get(name);
-                    if (indexList == null) {
-                        indexList = new LinkedList<>();
-                        tempMap.put(name, indexList);
-                    }
-                    indexList.add(index);
-
+                    listMap.computeIfAbsent(name, k -> new LinkedList<>()).add(index);
                     index++;
                 }
             }
             parsedQuery.append(c);
         }
 
-        // replace the lists of Integer objects with arrays of ints
-        for (Map.Entry<String, List<Integer>> entry : tempMap.entrySet()) {
+        // Convert lists to int arrays
+        for (Map.Entry<String, List<Integer>> entry : listMap.entrySet()) {
             List<Integer> list = entry.getValue();
             int[] indexes = new int[list.size()];
-            int i = 0;
-            for (Integer x : list) {
-                indexes[i++] = x;
+            for (int i = 0; i < list.size(); i++) {
+                indexes[i] = list.get(i);
             }
             paramMap.put(entry.getKey(), indexes);
         }
