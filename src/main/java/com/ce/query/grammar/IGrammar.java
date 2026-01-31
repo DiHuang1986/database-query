@@ -4,8 +4,8 @@ public interface IGrammar {
 
     String getDatabaseProductName();
 
-    void handleSkip(StringBuffer buffer, int skip);
+    void handleSkip(StringBuilder buffer, int skip);
 
 
-    void handleTake(StringBuffer buffer, int take);
+    void handleTake(StringBuilder buffer, int take);
 }

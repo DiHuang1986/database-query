@@ -14,7 +14,7 @@ public class SQLHelper {
 	public static String generateArrayOfNamedParameterString(String name, int quantity) {
 		String[] names = generateArrayOfNamedParameters(name, quantity);
 		
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		for(int i=0; i<quantity; i++) {
 			if(i == 0)
 				buffer.append(String.format(":%s", names[i]));
@@ -67,7 +67,7 @@ public class SQLHelper {
 		if(pieces == null) return null;
 		if(pieces.length == 0) return null;
 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append(pieces[0]);
 		for(int i=1; i<pieces.length; i++) {
 			sb.append(delimiter + pieces[i]);

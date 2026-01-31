@@ -38,10 +38,8 @@ public class DatabaseWrapper {
             T result = execution.execute(threadLocalConnection.get());
             return result;
         } catch (SQLException sqlExp) {
-            sqlExp.printStackTrace();
             throw new QueryException("DatabaseWrapper execute failed", sqlExp);
         } catch (RuntimeException e) {
-            e.printStackTrace();
             throw e;
         } finally {
             // if can close, close the connection
@@ -70,12 +68,10 @@ public class DatabaseWrapper {
             return result;
         } catch (SQLException sqlExp) {
             rollback(threadLocalConnection.get());
-            sqlExp.printStackTrace();
             // for SQLException, we wrap it into a QueryException
             throw new QueryException("DatabaseWrapper execute failed", sqlExp);
         } catch (RuntimeException e) {
             rollback(threadLocalConnection.get());
-            e.printStackTrace();
             throw e;
         }
         // finally close the connection
@@ -180,7 +176,6 @@ public class DatabaseWrapper {
         } catch (SQLException e) {
             // ignore this function because more important exception shall be thrown
             // from parent method
-            e.printStackTrace();
         }
     }
 
