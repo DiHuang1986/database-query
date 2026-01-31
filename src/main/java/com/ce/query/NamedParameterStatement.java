@@ -17,7 +17,7 @@ public class NamedParameterStatement {
     /**
      * Maps parameter names to arrays of ints which are the parameter indices.
      */
-    private final Map indexMap;
+    private final Map<String, int[]> indexMap;
 
 
     /**
@@ -29,7 +29,7 @@ public class NamedParameterStatement {
      * @throws SQLException if the statement could not be created
      */
     public NamedParameterStatement(Connection connection, String query) throws SQLException {
-        indexMap = new HashMap();
+        indexMap = new HashMap<>();
         String parsedQuery = parse(query, indexMap);
         statement = connection.prepareStatement(parsedQuery);
 
@@ -45,14 +45,16 @@ public class NamedParameterStatement {
      * @param paramMap map to hold parameter-index mappings
      * @return the parsed query
      */
-    static final String parse(String query, Map paramMap) {
+    static final String parse(String query, Map<String, int[]> paramMap) {
         // I was originally using regular expressions, but they didn't work well for ignoring
         // parameter-like strings inside quotes.
         int length = query.length();
-        StringBuffer parsedQuery = new StringBuffer(length);
+        StringBuilder parsedQuery = new StringBuilder(length);
         boolean inSingleQuote = false;
         boolean inDoubleQuote = false;
         int index = 1;
+        
+        Map<String, List<Integer>> tempMap = new HashMap<>();
 
         for (int i = 0; i < length; i++) {
             char c = query.charAt(i);
@@ -79,12 +81,12 @@ public class NamedParameterStatement {
                     c = '?'; // replace the parameter with a question mark
                     i += name.length(); // skip past the end if the parameter
 
-                    List indexList = (List) paramMap.get(name);
+                    List<Integer> indexList = tempMap.get(name);
                     if (indexList == null) {
-                        indexList = new LinkedList();
-                        paramMap.put(name, indexList);
+                        indexList = new LinkedList<>();
+                        tempMap.put(name, indexList);
                     }
-                    indexList.add(new Integer(index));
+                    indexList.add(index);
 
                     index++;
                 }
@@ -93,16 +95,14 @@ public class NamedParameterStatement {
         }
 
         // replace the lists of Integer objects with arrays of ints
-        for (Iterator itr = paramMap.entrySet().iterator(); itr.hasNext(); ) {
-            Map.Entry entry = (Map.Entry) itr.next();
-            List list = (List) entry.getValue();
+        for (Map.Entry<String, List<Integer>> entry : tempMap.entrySet()) {
+            List<Integer> list = entry.getValue();
             int[] indexes = new int[list.size()];
             int i = 0;
-            for (Iterator itr2 = list.iterator(); itr2.hasNext(); ) {
-                Integer x = (Integer) itr2.next();
-                indexes[i++] = x.intValue();
+            for (Integer x : list) {
+                indexes[i++] = x;
             }
-            entry.setValue(indexes);
+            paramMap.put(entry.getKey(), indexes);
         }
 
         return parsedQuery.toString();

@@ -46,7 +46,7 @@ public class Query {
                 this.grammar = GrammarManager.INSTANCE.get(GrammarManager.DEFAULT);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new QueryException("Failed to initialize grammar", e);
         }
     }
 
@@ -292,14 +292,14 @@ public class Query {
         return this;
     }
 
-    private void _buildJoin(StringBuffer buffer) {
+    private void _buildJoin(StringBuilder buffer) {
         // join
         for (int i = 0; i < joins.size(); i++) {
             buffer.append(joins.get(i));
         }
     }
 
-    private void _appendWhere(StringBuffer buffer) {
+    private void _appendWhere(StringBuilder buffer) {
         if (buffer.toString().contains(" where ")) {
             buffer.append(" and ");
         } else {
@@ -307,7 +307,7 @@ public class Query {
         }
     }
 
-    private void _buildWhereRaw(StringBuffer buffer) {
+    private void _buildWhereRaw(StringBuilder buffer) {
         // where raw
         for (int i = 0; i < whereRawList.size(); i++) {
             String where = whereRawList.get(i);
@@ -318,7 +318,7 @@ public class Query {
         }
     }
 
-    private void _buildWhere(StringBuffer buffer) {
+    private void _buildWhere(StringBuilder buffer) {
         // where
         for (int i = 0; i < whereList.size(); i++) {
             String token = whereList.get(i);
@@ -327,7 +327,7 @@ public class Query {
         }
     }
 
-    void _buildWhereIn(StringBuffer buffer) {
+    void _buildWhereIn(StringBuilder buffer) {
         // where in
         for (Entry<String, Object[]> entry : whereInList.entrySet()) {
 
@@ -350,11 +350,11 @@ public class Query {
         }
     }
 
-    private StringBuffer _buildSqlBase() {
+    private StringBuilder _buildSqlBase() {
         if (table == null)
             throw new QueryException("table is required");
 
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
 
         _buildTable(buffer);
 
@@ -375,11 +375,11 @@ public class Query {
         return buffer;
     }
 
-    private void _buildTable(StringBuffer buffer) {
+    private void _buildTable(StringBuilder buffer) {
         buffer.append(String.format(" from %s ", table));
     }
 
-    private void _buildOrderBy(StringBuffer buffer) {
+    private void _buildOrderBy(StringBuilder buffer) {
         if (orderBy != null) {
             if (!"desc".equals(order)) {
                 order = "asc";
@@ -388,13 +388,13 @@ public class Query {
         }
     }
 
-    private void _buildGroupBy(StringBuffer buffer) {
+    private void _buildGroupBy(StringBuilder buffer) {
         if (groupBy != null) {
             buffer.append(String.format(" group by %s ", groupBy));
         }
     }
 
-    private void _buildWhereLike(StringBuffer buffer) {
+    private void _buildWhereLike(StringBuilder buffer) {
         // where like
         for (int i = 0; i < whereLikeList.size(); i++) {
             String token = whereLikeList.get(i);
@@ -416,7 +416,7 @@ public class Query {
         if (statement != null) {
             sql = statement;
         } else {
-            StringBuffer buffer = _buildSqlBase();
+            StringBuilder buffer = _buildSqlBase();
 
             _buildSelect(buffer);
 
@@ -428,14 +428,14 @@ public class Query {
         return executeQuery(sql);
     }
 
-    private void _buildSelect(StringBuffer buffer) {
+    private void _buildSelect(StringBuilder buffer) {
         // add select
         if (select == null || "".equals(select.trim()))
             select = "*";
         buffer.insert(0, String.format("select %s ", select));
     }
 
-    private void _buildPagination(StringBuffer buffer) {
+    private void _buildPagination(StringBuilder buffer) {
         if (this.skip > 0) {
             grammar.handleSkip(buffer, skip);
         }
@@ -557,7 +557,6 @@ public class Query {
         } catch (SQLException e) {
             throw new QueryException("SQL Exception", e);
         } catch (IOException e) {
-            e.printStackTrace();
             throw new QueryException("I/O Exception", e);
         } finally {
             this.closeResultSet(rs);
@@ -587,7 +586,11 @@ public class Query {
      * @return
      */
     public <T> T first(IRowToEntityHandler<T> mapper) {
-        return mapper.map(this.first());
+        Row row = this.first();
+        if (row == null) {
+            return null;
+        }
+        return mapper.map(row);
     }
 
     /**
@@ -602,7 +605,7 @@ public class Query {
     public int count(String countStr) {
         if (countStr == null || "".equals(countStr.trim())) countStr = "*";
 
-        StringBuffer buffer = _buildSqlBase();
+        StringBuilder buffer = _buildSqlBase();
 
         buffer.insert(0, String.format("select count(%s) count ", countStr));
 
@@ -620,7 +623,7 @@ public class Query {
             return ((BigDecimal) countObject).intValue();
         }
 
-        return Integer.parseInt(countStr.toString());
+        return Integer.parseInt(countObject.toString());
     }
 
     private void _applyParams(NamedParameterStatement statement) throws SQLException {
@@ -692,7 +695,7 @@ public class Query {
             try {
                 statement.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                // Silently ignore - this is cleanup in finally block
             }
         }
     }
@@ -702,7 +705,7 @@ public class Query {
             try {
                 rs.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                // Silently ignore - this is cleanup in finally block
             }
         }
     }
@@ -711,7 +714,7 @@ public class Query {
         if (this.statement != null) {
             return this.statement;
         }
-        StringBuffer buffer = _buildSqlBase();
+        StringBuilder buffer = _buildSqlBase();
         _buildSelect(buffer);
         return buffer.toString();
     }
